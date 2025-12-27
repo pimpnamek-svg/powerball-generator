@@ -1,7 +1,20 @@
 from fastapi import FastAPI
+import random
+import time
+import os
+import hashlib
 import numpy as np
 from collections import defaultdict
-import os
+
+app = FastAPI()
+
+@app.on_event("startup")
+def reset_rng_on_startup():
+    entropy = f"{time.time()}-{os.getpid()}-{os.urandom(16)}"
+    seed = int(hashlib.sha256(entropy.encode()).hexdigest(), 16)
+    random.seed(seed)
+    print("🎲 RNG seeded on startup")
+
 
 app = FastAPI(title="Powerball Picker API")
 
@@ -14,12 +27,14 @@ BETA_BETA_0 = 68.0
 
 
 def generate_data():
-    np.random.seed(42)
     draws = []
     for _ in range(156):
-        white_balls = sorted(np.random.choice(range(1, 70), 5, replace=False))
+        white_balls = sorted(
+            np.random.choice(range(1, 70), 5, replace=False)
+        )
         draws.append(white_balls)
     return draws
+
 
 
 def compute_lifts(draws):
